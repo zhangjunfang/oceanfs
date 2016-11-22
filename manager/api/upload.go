@@ -1,17 +1,15 @@
 package api
 
 import (
-	"os"
 	"bytes"
-	"mime/multipart"
-	"path/filepath"
-	"io"
-	"net/http"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
-//"github.com/030io/whalefs/volume/manager"
-//"encoding/json"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"path/filepath"
 )
 
 func Upload(host string, port int, vid uint64, fid uint64, filePath string, fileName string) (err error) {

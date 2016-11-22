@@ -1,12 +1,13 @@
 package api_test
 
 import (
-	"testing"
 	"io/ioutil"
 	"os"
-	"github.com/030io/whalefs/manager"
-	"github.com/030io/whalefs/manager/api"
 	"path/filepath"
+	"testing"
+
+	"github.com/zhangjunfang/oceanfs/manager"
+	"github.com/zhangjunfang/oceanfs/manager/api"
 )
 
 func TestAPI(t *testing.T) {
@@ -92,4 +93,3 @@ func TestAPI(t *testing.T) {
 		t.Error(err)
 	}
 }
-

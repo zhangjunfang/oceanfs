@@ -1,16 +1,17 @@
 package api_test
 
 import (
-	"testing"
-	"github.com/030io/whalefs/master"
-	"io/ioutil"
-	"os"
-	"github.com/030io/whalefs/manager"
-	"time"
-	"github.com/030io/whalefs/master/api"
-	managerApi "github.com/030io/whalefs/manager/api"
 	"crypto/rand"
 	"crypto/sha1"
+	"io/ioutil"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/zhangjunfang/oceanfs/manager"
+	managerApi "github.com/zhangjunfang/oceanfs/manager/api"
+	"github.com/zhangjunfang/oceanfs/master"
+	"github.com/zhangjunfang/oceanfs/master/api"
 )
 
 func TestAPI(t *testing.T) {
@@ -68,7 +69,7 @@ func TestAPI(t *testing.T) {
 			body, err := api.Get("localhost", m.Port, tempFile.Name())
 			if err != nil {
 				t.Fatal(err)
-			}else if sha1.Sum(body) != sha1.Sum(data) {
+			} else if sha1.Sum(body) != sha1.Sum(data) {
 				t.Error("data wrong")
 			}
 
@@ -147,7 +148,7 @@ func TestReplication(t *testing.T) {
 			body, err := api.Get("localhost", m.Port, tempFile.Name())
 			if err != nil {
 				t.Fatal(err)
-			}else if sha1.Sum(body) != sha1.Sum(data) {
+			} else if sha1.Sum(body) != sha1.Sum(data) {
 				t.Error("data wrong")
 			}
 
@@ -159,14 +160,14 @@ func TestReplication(t *testing.T) {
 			body, err = managerApi.Get(vm1.PublicHost, vm1.PublicPort, vid, fid, fileName)
 			if err != nil {
 				t.Fatal(err)
-			}else if sha1.Sum(body) != sha1.Sum(data) {
+			} else if sha1.Sum(body) != sha1.Sum(data) {
 				t.Error("data wrong")
 			}
 
 			body, err = managerApi.Get(vm2.PublicHost, vm2.PublicPort, vid, fid, fileName)
 			if err != nil {
 				t.Fatal(err)
-			}else if sha1.Sum(body) != sha1.Sum(data) {
+			} else if sha1.Sum(body) != sha1.Sum(data) {
 				t.Error("data wrong")
 			}
 

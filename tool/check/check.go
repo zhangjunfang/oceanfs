@@ -1,14 +1,15 @@
 package check
 
 import (
-	"os"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/util"
-	"github.com/syndtr/goleveldb/leveldb/storage"
-	"github.com/030io/whalefs/manager/volume"
 	"encoding/binary"
+	"os"
+
 	log "github.com/Sirupsen/logrus"
-	_ "github.com/030io/whalefs/utils/logrus_hook"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/storage"
+	"github.com/syndtr/goleveldb/leveldb/util"
+	"github.com/zhangjunfang/oceanfs/manager/volume"
+	_ "github.com/zhangjunfang/oceanfs/utils/logrus_hook"
 )
 
 type Checker struct {
@@ -26,16 +27,16 @@ func NewChecker(volumePath string) (*Checker, error) {
 		return checker, err
 	}
 
-	checker.index, err = leveldb.OpenFile(volumePath[:len(volumePath) - 5] + ".index", nil)
+	checker.index, err = leveldb.OpenFile(volumePath[:len(volumePath)-5]+".index", nil)
 	if err != nil {
 		return checker, err
 	}
 
-	checker.status, err = leveldb.OpenFile(volumePath[:len(volumePath) - 5] + ".status", nil)
+	checker.status, err = leveldb.OpenFile(volumePath[:len(volumePath)-5]+".status", nil)
 	return checker, err
 }
 
-func (c *Checker)Check() {
+func (c *Checker) Check() {
 	checkDB, err := leveldb.Open(storage.NewMemStorage(), nil)
 	if err != nil {
 		panic(err)
@@ -52,7 +53,7 @@ func (c *Checker)Check() {
 				size := binary.BigEndian.Uint64(key[9:])
 				log.WithFields(log.Fields{
 					"offset": offset,
-					"size": size,
+					"size":   size,
 				}).Error("existed!")
 			} else {
 				err = checkDB.Put(key[1:], nil, nil)
@@ -73,8 +74,8 @@ func (c *Checker)Check() {
 		if err == nil {
 			key := make([]byte, 16)
 			//前后各有一个8字节的fid, offset向前8字节, size增加16字节
-			binary.BigEndian.PutUint64(key[:8], file.Offset - 8)
-			binary.BigEndian.PutUint64(key[8:], file.Size + 16)
+			binary.BigEndian.PutUint64(key[:8], file.Offset-8)
+			binary.BigEndian.PutUint64(key[8:], file.Size+16)
 			err = checkDB.Put(key, nil, nil)
 			if err != nil {
 				panic(err)
@@ -88,12 +89,12 @@ func (c *Checker)Check() {
 	defer cIter.Release()
 
 	var (
-		offset uint64
-		size uint64
-		key = make([]byte, 16)
+		offset  uint64
+		size    uint64
+		key     = make([]byte, 16)
 		nOffset uint64
-		nSize uint64
-		nKey = make([]byte, 16)
+		nSize   uint64
+		nKey    = make([]byte, 16)
 	)
 	cIter.Next()
 	key = cIter.Key()
@@ -104,12 +105,12 @@ func (c *Checker)Check() {
 		nOffset = binary.BigEndian.Uint64(nKey[:8])
 		nSize = binary.BigEndian.Uint64(nKey[8:])
 
-		if offset + size != nOffset {
+		if offset+size != nOffset {
 			log.WithFields(log.Fields{
-				"offset": offset,
-				"size": size,
+				"offset":  offset,
+				"size":    size,
 				"nOffset": nOffset,
-				"nSize": nSize,
+				"nSize":   nSize,
 			}).Error()
 		}
 
@@ -121,16 +122,16 @@ func (c *Checker)Check() {
 	if err != nil {
 		panic(err)
 	}
-	if offset + size != uint64(datafileStat.Size()) {
+	if offset+size != uint64(datafileStat.Size()) {
 		log.WithFields(log.Fields{
-			"offset": offset,
-			"size": size,
+			"offset":       offset,
+			"size":         size,
 			"datafileSize": datafileStat.Size(),
 		}).Error()
 	}
 }
 
-func (c *Checker)Close() {
+func (c *Checker) Close() {
 	c.dataFile.Close()
 	c.index.Close()
 	c.status.Close()

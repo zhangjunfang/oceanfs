@@ -1,20 +1,21 @@
 package manager
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
-	"io"
-	"fmt"
-	"github.com/030io/whalefs/manager/volume"
+
+	"github.com/zhangjunfang/oceanfs/manager/volume"
 	"gopkg.in/redis.v2"
-	"os"
 )
 
 var (
 	postVolumeUrl *regexp.Regexp
-	postFileUrl *regexp.Regexp
-	deleteFileUrl  *regexp.Regexp
+	postFileUrl   *regexp.Regexp
+	deleteFileUrl *regexp.Regexp
 )
 
 func init() {
@@ -36,7 +37,7 @@ type Size interface {
 	Size() int64
 }
 
-func (vm *VolumeManager)adminEntry(w http.ResponseWriter, r *http.Request) {
+func (vm *VolumeManager) adminEntry(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet, http.MethodHead:
 		vm.publicEntry(w, r)
@@ -46,20 +47,20 @@ func (vm *VolumeManager)adminEntry(w http.ResponseWriter, r *http.Request) {
 		} else if postVolumeUrl.MatchString(r.URL.Path) {
 			vm.adminPostVolume(w, r)
 		} else {
-			http.Error(w, r.URL.String() + " can't match", http.StatusNotFound)
+			http.Error(w, r.URL.String()+" can't match", http.StatusNotFound)
 		}
 	case http.MethodDelete:
 		if deleteFileUrl.MatchString(r.URL.Path) {
 			vm.adminDeleteFile(w, r)
 		} else {
-			http.Error(w, r.URL.String() + " can't match", http.StatusNotFound)
+			http.Error(w, r.URL.String()+" can't match", http.StatusNotFound)
 		}
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
-func (vm *VolumeManager)adminPostVolume(w http.ResponseWriter, r *http.Request) {
+func (vm *VolumeManager) adminPostVolume(w http.ResponseWriter, r *http.Request) {
 	match := postVolumeUrl.FindStringSubmatch(r.URL.Path)
 	vid, _ := strconv.ParseUint(match[1], 10, 64)
 	volume, err := volume.NewVolume(vm.DataDir, vid)
@@ -72,7 +73,7 @@ func (vm *VolumeManager)adminPostVolume(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (vm *VolumeManager)adminPostFile(w http.ResponseWriter, r *http.Request) {
+func (vm *VolumeManager) adminPostFile(w http.ResponseWriter, r *http.Request) {
 	match := postFileUrl.FindStringSubmatch(r.URL.Path)
 	vid, _ := strconv.ParseUint(match[1], 10, 64)
 	volume, ok := vm.Volumes[vid]
@@ -124,7 +125,7 @@ func (vm *VolumeManager)adminPostFile(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (vm *VolumeManager)adminDeleteFile(w http.ResponseWriter, r *http.Request) {
+func (vm *VolumeManager) adminDeleteFile(w http.ResponseWriter, r *http.Request) {
 	match := deleteFileUrl.FindStringSubmatch(r.URL.Path)
 	vid, _ := strconv.ParseUint(match[1], 10, 64)
 	volume := vm.Volumes[vid]

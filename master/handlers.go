@@ -1,24 +1,25 @@
 package master
 
 import (
-	"net/http"
-	"io/ioutil"
 	"encoding/json"
-	"time"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
-	"math/rand"
-	"path/filepath"
-	"fmt"
-	"os"
-	"github.com/030io/whalefs/utils/uuid"
+	"time"
+
+	"github.com/zhangjunfang/oceanfs/utils/uuid"
 )
 
 type Size interface {
 	Size() int64
 }
 
-func (m *Master)publicEntry(w http.ResponseWriter, r *http.Request) {
+func (m *Master) publicEntry(w http.ResponseWriter, r *http.Request) {
 	m.serverMutex.RLock()
 	defer m.serverMutex.RUnlock()
 
@@ -29,7 +30,7 @@ func (m *Master)publicEntry(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (m *Master)masterEntry(w http.ResponseWriter, r *http.Request) {
+func (m *Master) masterEntry(w http.ResponseWriter, r *http.Request) {
 	m.serverMutex.RLock()
 	defer m.serverMutex.RUnlock()
 
@@ -42,7 +43,7 @@ func (m *Master)masterEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		switch r.Method{
+		switch r.Method {
 		case http.MethodGet, http.MethodHead:
 			m.getFile(w, r)
 		case http.MethodPost:
@@ -55,7 +56,7 @@ func (m *Master)masterEntry(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (m *Master)heartbeat(w http.ResponseWriter, r *http.Request) {
+func (m *Master) heartbeat(w http.ResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	newVms := new(VolumeManagerStatus)
 	json.Unmarshal(body, newVms)
@@ -79,7 +80,7 @@ func (m *Master)heartbeat(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (m *Master)getFile(w http.ResponseWriter, r *http.Request) {
+func (m *Master) getFile(w http.ResponseWriter, r *http.Request) {
 	vid, fid, fileName, err := m.Metadata.Get(r.URL.Path)
 	if err != nil {
 		http.NotFound(w, r)
@@ -97,7 +98,7 @@ func (m *Master)getFile(w http.ResponseWriter, r *http.Request) {
 	length := len(vStatusList)
 	j := rand.Intn(length)
 	for i := 0; i < length; i++ {
-		vStatus := vStatusList[(i + j) % length]
+		vStatus := vStatusList[(i+j)%length]
 		if vStatus.vmStatus.IsAlive() {
 			http.Redirect(w, r, vStatus.getFileUrl(fid, fileName), http.StatusFound)
 			return
@@ -107,16 +108,16 @@ func (m *Master)getFile(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "all volumes is dead", http.StatusInternalServerError)
 }
 
-func (m *Master)uploadFile(w http.ResponseWriter, r *http.Request) {
+func (m *Master) uploadFile(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "r.FromFile: " + err.Error(), http.StatusInternalServerError)
+		http.Error(w, "r.FromFile: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer file.Close()
 
 	var dst string
-	if r.URL.Path[len(r.URL.Path) - 1] == '/' {
+	if r.URL.Path[len(r.URL.Path)-1] == '/' {
 		dst = r.URL.Path + filepath.Base(header.Filename)
 	} else {
 		dst = r.URL.Path
@@ -129,7 +130,7 @@ func (m *Master)uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var fileSize int64
-	switch file.(type){
+	switch file.(type) {
 	case *os.File:
 		s, _ := file.(*os.File).Stat()
 		fileSize = s.Size()
@@ -139,7 +140,7 @@ func (m *Master)uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	vStatusList, err := m.getWritableVolumes(uint64(fileSize))
 	if err != nil {
-		http.Error(w, "m.getWritableVolumes: " + err.Error(), http.StatusInternalServerError)
+		http.Error(w, "m.getWritableVolumes: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -173,13 +174,13 @@ func (m *Master)uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	m.Metadata.Set(dst, vStatusList[0].Id, fid, fileName)
 	if err != nil {
-		http.Error(w, "m.Metadata.Set: " + err.Error(), http.StatusInternalServerError)
+		http.Error(w, "m.Metadata.Set: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (m *Master)deleteFile(w http.ResponseWriter, r *http.Request) {
+func (m *Master) deleteFile(w http.ResponseWriter, r *http.Request) {
 	vid, fid, fileName, err := m.Metadata.Get(r.URL.Path)
 	if err != nil {
 		http.NotFound(w, r)

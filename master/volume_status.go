@@ -1,14 +1,15 @@
 package master
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/url"
-	"io/ioutil"
-	"github.com/030io/whalefs/manager/api"
-	"bytes"
-	"mime/multipart"
-	"errors"
+
+	"github.com/zhangjunfang/oceanfs/manager/api"
 )
 
 type VolumeStatus struct {
@@ -16,21 +17,21 @@ type VolumeStatus struct {
 	DataFileSize uint64
 	MaxFreeSpace uint64
 
-	Writable     bool
+	Writable bool
 
-	vmStatus     *VolumeManagerStatus `json:"-"`
+	vmStatus *VolumeManagerStatus `json:"-"`
 }
 
-func (vs *VolumeStatus)getFileUrl(fid uint64, fileName string) string {
+func (vs *VolumeStatus) getFileUrl(fid uint64, fileName string) string {
 	return fmt.Sprintf("http://%s:%d/%d/%d/%s", vs.vmStatus.PublicHost, vs.vmStatus.PublicPort, vs.Id, fid, fileName)
 }
 
-func (vs *VolumeStatus)redirectToFile(w http.ResponseWriter, r *http.Request, fid uint64, fileName string) {
+func (vs *VolumeStatus) redirectToFile(w http.ResponseWriter, r *http.Request, fid uint64, fileName string) {
 	url := vs.getFileUrl(fid, fileName)
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-func (vs *VolumeStatus)uploadFile(fid uint64, fileName string, data []byte) error {
+func (vs *VolumeStatus) uploadFile(fid uint64, fileName string, data []byte) error {
 	body := new(bytes.Buffer)
 	mPart := multipart.NewWriter(body)
 
@@ -74,16 +75,16 @@ func (vs *VolumeStatus)uploadFile(fid uint64, fileName string, data []byte) erro
 	return nil
 }
 
-func (vs *VolumeStatus)delete(fid uint64, fileName string) error {
+func (vs *VolumeStatus) delete(fid uint64, fileName string) error {
 	return api.Delete(vs.vmStatus.AdminHost, vs.vmStatus.AdminPort, vs.Id, fid, fileName)
 }
 
-func (vs *VolumeStatus)isWritable(size uint64) bool {
+func (vs *VolumeStatus) isWritable(size uint64) bool {
 	return vs.Writable && vs.MaxFreeSpace != 0 && vs.MaxFreeSpace >= size
 }
 
-func (vs *VolumeStatus)hasEnoughSpace() bool {
-	return vs.DataFileSize / vs.MaxFreeSpace < 100
+func (vs *VolumeStatus) hasEnoughSpace() bool {
+	return vs.DataFileSize/vs.MaxFreeSpace < 100
 }
 
 func volumesIsWritable(vStatusList []*VolumeStatus, size uint64) bool {

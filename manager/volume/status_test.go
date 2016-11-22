@@ -1,9 +1,9 @@
 package volume
 
 import (
-	"testing"
 	"io/ioutil"
 	"os"
+	"testing"
 )
 
 func TestStatus(t *testing.T) {
@@ -14,13 +14,6 @@ func TestStatus(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
-	//for i := 0; i < 1000; i++ {
-	//	fid := status.newFid()
-	//	if fid != uint64(i) {
-	//		t.Errorf("fid: %d != i: %d", fid, i)
-	//	}
-	//}
 
 	offset, err := status.newSpace(10)
 	if err == nil {

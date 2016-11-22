@@ -1,29 +1,30 @@
 package manager
 
 import (
-	"net/http"
-	"github.com/030io/whalefs/manager/volume"
-	"os"
-	"io/ioutil"
-	"strings"
-	"strconv"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
 	"time"
-	"github.com/030io/whalefs/master/api"
-	"github.com/030io/whalefs/master"
-	"github.com/030io/whalefs/utils/disk"
+
+	"github.com/zhangjunfang/oceanfs/manager/volume"
+	"github.com/zhangjunfang/oceanfs/master"
+	"github.com/zhangjunfang/oceanfs/master/api"
+	"github.com/zhangjunfang/oceanfs/utils/disk"
 )
 
 var (
-	MaxDiskUsedPercent uint = 99
-	HeartbeatDuration time.Duration = time.Second * 5
-	ReadOnly bool = false
-	DefaultExpires = time.Minute * 30
+	MaxDiskUsedPercent uint          = 99
+	HeartbeatDuration  time.Duration = time.Second * 5
+	ReadOnly           bool          = false
+	DefaultExpires                   = time.Minute * 30
 )
 
 type VolumeManager struct {
-	DataDir      string
-	Volumes      map[uint64]*volume.Volume
+	DataDir string
+	Volumes map[uint64]*volume.Volume
 
 	AdminPort    int
 	AdminHost    string
@@ -32,11 +33,11 @@ type VolumeManager struct {
 	AdminServer  *http.ServeMux
 	PublicServer *http.ServeMux
 
-	Machine      string
-	DataCenter   string
+	Machine    string
+	DataCenter string
 
-	MasterHost   string
-	MasterPort   int
+	MasterHost string
+	MasterPort int
 }
 
 func NewVolumeManager(dir string) (*VolumeManager, error) {
@@ -60,7 +61,7 @@ func NewVolumeManager(dir string) (*VolumeManager, error) {
 	for _, fi := range fileInfos {
 		fileName := fi.Name()
 		if strings.HasSuffix(fileName, ".data") {
-			vid, err := strconv.ParseUint(fileName[:len(fileName) - 5], 10, 64)
+			vid, err := strconv.ParseUint(fileName[:len(fileName)-5], 10, 64)
 			if err != nil {
 				panic(err)
 			}
@@ -87,7 +88,7 @@ func NewVolumeManager(dir string) (*VolumeManager, error) {
 	return vm, nil
 }
 
-func (vm *VolumeManager)Start() {
+func (vm *VolumeManager) Start() {
 	go vm.Heartbeat()
 
 	go func() {
@@ -103,13 +104,13 @@ func (vm *VolumeManager)Start() {
 	}
 }
 
-func (vm *VolumeManager)Stop() {
+func (vm *VolumeManager) Stop() {
 	for _, v := range vm.Volumes {
 		v.Close()
 	}
 }
 
-func (vm *VolumeManager)Heartbeat() {
+func (vm *VolumeManager) Heartbeat() {
 	tick := time.NewTicker(HeartbeatDuration)
 	defer tick.Stop()
 	for {

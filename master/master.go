@@ -1,28 +1,29 @@
 package master
 
 import (
-	"net/http"
-	"fmt"
-	"sync"
 	"errors"
+	"fmt"
 	"math/rand"
-	"github.com/030io/whalefs/utils/uuid"
+	"net/http"
+	"sync"
+
+	"github.com/zhangjunfang/oceanfs/utils/uuid"
 )
 
 type Master struct {
-	Port           int
-	PublicPort     int
+	Port       int
+	PublicPort int
 
 	VMStatusList   []*VolumeManagerStatus
 	VStatusListMap map[uint64][]*VolumeStatus
 	statusMutex    sync.RWMutex
 
-	Server         *http.ServeMux
-	serverMutex    sync.RWMutex
-	PublicServer   *http.ServeMux
+	Server       *http.ServeMux
+	serverMutex  sync.RWMutex
+	PublicServer *http.ServeMux
 
-	Metadata       Metadata
-	Replication    [3]int
+	Metadata    Metadata
+	Replication [3]int
 }
 
 func NewMaster() (*Master, error) {
@@ -45,7 +46,7 @@ func NewMaster() (*Master, error) {
 	return m, nil
 }
 
-func (m *Master)Start() {
+func (m *Master) Start() {
 	go func() {
 		err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", m.PublicPort), m.PublicServer)
 		if err != nil {
@@ -59,12 +60,12 @@ func (m *Master)Start() {
 	}
 }
 
-func (m *Master)Stop() {
+func (m *Master) Stop() {
 	m.serverMutex.Lock()
 	m.Metadata.Close()
 }
 
-func (m *Master)getWritableVolumes(size uint64) ([]*VolumeStatus, error) {
+func (m *Master) getWritableVolumes(size uint64) ([]*VolumeStatus, error) {
 	m.statusMutex.RLock()
 	defer m.statusMutex.RUnlock()
 
@@ -78,21 +79,21 @@ func (m *Master)getWritableVolumes(size uint64) ([]*VolumeStatus, error) {
 	return nil, errors.New("can't find writable volumes")
 }
 
-func (m *Master)volumesIsValid(vStatusList []*VolumeStatus) bool {
+func (m *Master) volumesIsValid(vStatusList []*VolumeStatus) bool {
 	for _, vs := range vStatusList {
 		if !vs.vmStatus.IsAlive() {
 			return false
 		}
 	}
 
-	if len(vStatusList) != 1 + m.Replication[0] + m.Replication[1] + m.Replication[2] {
+	if len(vStatusList) != 1+m.Replication[0]+m.Replication[1]+m.Replication[2] {
 		return false
 	}
 
 	return true
 }
 
-func (m *Master)vmsNeedCreateVolume(vms *VolumeManagerStatus) bool {
+func (m *Master) vmsNeedCreateVolume(vms *VolumeManagerStatus) bool {
 	m.statusMutex.RLock()
 	defer m.statusMutex.RUnlock()
 
@@ -107,7 +108,7 @@ func (m *Master)vmsNeedCreateVolume(vms *VolumeManagerStatus) bool {
 	return need && vms.CanCreateVolume
 }
 
-func (m *Master)createVolumeWithReplication(vms *VolumeManagerStatus) error {
+func (m *Master) createVolumeWithReplication(vms *VolumeManagerStatus) error {
 	if !vms.IsAlive() {
 		return fmt.Errorf("%s:%d is dead", vms.AdminHost, vms.AdminPort)
 	}
@@ -140,7 +141,7 @@ func (m *Master)createVolumeWithReplication(vms *VolumeManagerStatus) error {
 	return nil
 }
 
-func (m *Master)getMatchReplicationVMS(vms *VolumeManagerStatus) ([]*VolumeManagerStatus, error) {
+func (m *Master) getMatchReplicationVMS(vms *VolumeManagerStatus) ([]*VolumeManagerStatus, error) {
 	m.statusMutex.RLock()
 	defer m.statusMutex.RUnlock()
 
@@ -154,9 +155,9 @@ func (m *Master)getMatchReplicationVMS(vms *VolumeManagerStatus) ([]*VolumeManag
 		VMStatusList[a], VMStatusList[b] = VMStatusList[b], VMStatusList[a]
 	}
 
-	find0:
+find0:
 	for _, vms := range VMStatusList {
-		if len(vmsList) == 1 + m.Replication[0] {
+		if len(vmsList) == 1+m.Replication[0] {
 			break
 		}
 		if vms.IsAlive() && vms.CanCreateVolume {
@@ -168,13 +169,13 @@ func (m *Master)getMatchReplicationVMS(vms *VolumeManagerStatus) ([]*VolumeManag
 			vmsList = append(vmsList, vms)
 		}
 	}
-	if len(vmsList) != 1 + m.Replication[0] {
+	if len(vmsList) != 1+m.Replication[0] {
 		return vmsList, errors.New("can't find enough 'same machine VM' to create volume")
 	}
 
-	find1:
+find1:
 	for _, vms := range VMStatusList {
-		if len(vmsList) == 1 + m.Replication[0] + m.Replication[1] {
+		if len(vmsList) == 1+m.Replication[0]+m.Replication[1] {
 			break
 		}
 		if vms.IsAlive() && vms.CanCreateVolume {
@@ -186,13 +187,13 @@ func (m *Master)getMatchReplicationVMS(vms *VolumeManagerStatus) ([]*VolumeManag
 			vmsList = append(vmsList, vms)
 		}
 	}
-	if len(vmsList) != 1 + m.Replication[0] + m.Replication[1] {
+	if len(vmsList) != 1+m.Replication[0]+m.Replication[1] {
 		return vmsList, errors.New("can't find enough 'different machine but same datacenter VM' to create volume")
 	}
 
-	find2:
+find2:
 	for _, vms := range VMStatusList {
-		if len(vmsList) == 1 + m.Replication[0] + m.Replication[1] + m.Replication[2] {
+		if len(vmsList) == 1+m.Replication[0]+m.Replication[1]+m.Replication[2] {
 			break
 		}
 		if vms.IsAlive() && vms.CanCreateVolume {
@@ -204,20 +205,20 @@ func (m *Master)getMatchReplicationVMS(vms *VolumeManagerStatus) ([]*VolumeManag
 			vmsList = append(vmsList, vms)
 		}
 	}
-	if len(vmsList) != 1 + m.Replication[0] + m.Replication[1] + m.Replication[2] {
+	if len(vmsList) != 1+m.Replication[0]+m.Replication[1]+m.Replication[2] {
 		return vmsList, errors.New("can't find enough 'different machine and different datacenter VM' to create volume")
 	}
 
 	return vmsList, nil
 }
 
-func (m *Master)updateVMS(newVms *VolumeManagerStatus) {
+func (m *Master) updateVMS(newVms *VolumeManagerStatus) {
 	m.statusMutex.Lock()
 	defer m.statusMutex.Unlock()
 
 	for i, oldVms := range m.VMStatusList {
 		if oldVms.AdminHost == newVms.AdminHost && oldVms.AdminPort == newVms.AdminPort {
-			m.VMStatusList = append(m.VMStatusList[:i], m.VMStatusList[i + 1:]...)
+			m.VMStatusList = append(m.VMStatusList[:i], m.VMStatusList[i+1:]...)
 			for _, vs := range oldVms.VStatusList {
 				vsList := m.VStatusListMap[vs.Id]
 				if len(vsList) == 1 {
@@ -226,7 +227,7 @@ func (m *Master)updateVMS(newVms *VolumeManagerStatus) {
 				}
 				for i, vs_ := range vsList {
 					if vs == vs_ {
-						vsList = append(vsList[:i], vsList[i + 1:]...)
+						vsList = append(vsList[:i], vsList[i+1:]...)
 						break
 					}
 				}
